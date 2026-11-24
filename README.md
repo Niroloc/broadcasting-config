@@ -1,6 +1,6 @@
 # broadcasting-config
 
-Раздача конфига sing-box на устройства через секретный gist. Конфиг шифруется (AES-256, openssl), устройство раз в сутки забирает его, проверяет `sing-box check`, применяет и пишет результат в [`reports.csv`](reports.csv).
+Раздача конфига sing-box на устройства через секретный gist. Конфиг шифруется (AES-256, openssl), устройство раз в сутки забирает его, проверяет `sing-box check`, применяет и пишет результат в `reports/<год>.csv` (файл года создаётся автоматически).
 
 ## Локально (откуда публикуем)
 
@@ -40,6 +40,6 @@ printf '/usr/bin/sing-box-sync\n/etc/sing-box-sync.conf\n' >> /etc/sysupgrade.co
 
 То же самое, но в конфиге указать `TARGET` и `RESTART="systemctl restart sing-box"`, а запуск повесить на cron или systemd-таймер.
 
-## Статусы в reports.csv
+## Статусы в отчётах
 
 `updated` · `unchanged` · `fail` (`download` / `decrypt` / `check`) · `rollback` (sing-box не поднялся после рестарта, вернули прошлый конфиг). `config_sha` — первые 12 символов sha256 конфига, `publish.sh` выводит такой же.

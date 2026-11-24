@@ -9,7 +9,7 @@ export KEY
 TARGET=${TARGET:-/etc/sing-box/config.json}
 RESTART=${RESTART:-/etc/init.d/sing-box restart}
 DEVICE=${DEVICE:-$(cat /proc/sys/kernel/hostname)}
-REPORT_PATH=${REPORT_PATH:-reports.csv}
+REPORT_DIR=${REPORT_DIR:-reports}
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -37,27 +37,40 @@ run() {
 
 report() {
   [ -n "${REPORT_REPO:-}" ] || return 0
-  api="https://api.github.com/repos/$REPORT_REPO/contents/$REPORT_PATH"
+  api="https://api.github.com/repos/$REPORT_REPO/contents/$REPORT_DIR/${now%%-*}.csv"
   auth="Authorization: Bearer $REPORT_TOKEN"
   for i in 1 2 3; do
-    # read current file (sha + content), append line, write back; retry on conflict
-    if curl -fsS -H "$auth" -o "$TMP/r.json" "$api"; then
-      sha=$(grep -o '"sha": *"[0-9a-f]*"' "$TMP/r.json" | head -n1 | grep -o '[0-9a-f]\{40\}')
+    # read current year's file (sha + content), append line, write back; retry on conflict
+    code=$(curl -sS -H "$auth" -o "$TMP/r.json" -w '%{http_code}' "$api")
+    : >"$TMP/r.csv"
+    shaf=
+    if [ "$code" = 200 ]; then
+      shaf=",\"sha\":\"$(grep -o '"sha": *"[0-9a-f]*"' "$TMP/r.json" | head -n1 | grep -o '[0-9a-f]\{40\}')\""
+      size=$(grep -o '"size": *[0-9]*' "$TMP/r.json" | head -n1 | grep -o '[0-9]*$')
       grep -o '"content": *"[^"]*"' "$TMP/r.json" | head -n1 |
         sed 's/^"content": *"//; s/"$//; s/\\n//g' | openssl base64 -d -A >"$TMP/r.csv"
-      [ -s "$TMP/r.csv" ] && [ -n "$(tail -c1 "$TMP/r.csv")" ] && echo >>"$TMP/r.csv"
-      echo "$1" >>"$TMP/r.csv"
-      printf '{"message":"report %s %s","sha":"%s","content":"%s"}' \
-        "$DEVICE" "$status" "$sha" "$(openssl base64 -A -in "$TMP/r.csv")" >"$TMP/put.json"
-      curl -fsS -X PUT -H "$auth" -o /dev/null --data @"$TMP/put.json" "$api" && return 0
+      # API returns no content for files >1MB: never overwrite history with one line
+      [ -s "$TMP/r.csv" ] || [ "$size" = 0 ] || { log "report: no content from $api"; return 1; }
+    elif [ "$code" != 404 ]; then
+      sleep $((i * 10)); continue
     fi
+    if [ -s "$TMP/r.csv" ]; then
+      [ -n "$(tail -c1 "$TMP/r.csv")" ] && echo >>"$TMP/r.csv"
+    else
+      echo "time,device,status,config_sha,error" >"$TMP/r.csv"
+    fi
+    echo "$1" >>"$TMP/r.csv"
+    printf '{"message":"report %s %s","content":"%s"%s}' \
+      "$DEVICE" "$status" "$(openssl base64 -A -in "$TMP/r.csv")" "$shaf" >"$TMP/put.json"
+    curl -fsS -X PUT -H "$auth" -o /dev/null --data @"$TMP/put.json" "$api" && return 0
     sleep $((i * 10))
   done
   return 1
 }
 
 run
-line="$(date -u +%Y-%m-%dT%H:%M:%SZ),$DEVICE,$status,$hash,$err"
+now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+line="$now,$DEVICE,$status,$hash,$err"
 log "$line"
 report "$line" || log "report failed"
 [ "$status" = updated ] || [ "$status" = unchanged ]

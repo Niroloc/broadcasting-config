@@ -1,0 +1,8 @@
+# /etc/sing-box-sync.conf  (chmod 600)
+GIST_URL=https://gist.githubusercontent.com/<user>/<gist_id>/raw/config.enc
+KEY=<same key as in .env>
+REPORT_REPO=Niroloc/broadcasting-config
+REPORT_TOKEN=<fine-grained PAT: this repo, Contents read/write>
+# DEVICE=home-router                       # default: hostname
+# TARGET=/etc/sing-box/config.json
+# RESTART="/etc/init.d/sing-box restart"   # e.g. "systemctl restart sing-box"

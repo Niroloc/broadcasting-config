@@ -12,8 +12,19 @@ $EDITOR config.json               # конфиг sing-box, в git не попа�
 
 ## OpenWrt-роутер
 
+Зависимости — в зависимости от версии:
+
 ```sh
-opkg update && opkg install curl openssl-util   # на 25.x: apk add curl openssl-util
+# OpenWrt 24.10 и старше — opkg
+opkg update && opkg install curl openssl-util
+
+# OpenWrt 25.12+ и snapshot — apk
+apk update && apk add curl openssl-util
+```
+
+Дальше одинаково:
+
+```sh
 wget -O /usr/bin/sing-box-sync https://raw.githubusercontent.com/Niroloc/broadcasting-config/main/sync.sh
 chmod +x /usr/bin/sing-box-sync
 wget -O /etc/sing-box-sync.conf https://raw.githubusercontent.com/Niroloc/broadcasting-config/main/sync.conf.example

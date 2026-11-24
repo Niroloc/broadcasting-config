@@ -15,7 +15,7 @@ $EDITOR config.json               # конфиг sing-box, в git не попа�
 Зависимости — в зависимости от версии:
 
 ```sh
-# OpenWrt 24.10 и старше — opkg
+# OpenWrt 24.10 и более ранние — opkg
 opkg update && opkg install curl openssl-util
 
 # OpenWrt 25.12+ и snapshot — apk

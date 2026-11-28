@@ -1,2 +1,3 @@
 time,device,status,config_sha,error
 2026-11-28T08:51:12Z,PEST,fail,,decrypt
+2026-11-28T09:26:24Z,PEST,rollback,0374cfc47e5c,restart
